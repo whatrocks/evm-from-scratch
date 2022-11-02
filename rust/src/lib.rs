@@ -27,7 +27,6 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
         match instruction {
             PUSH1 => {
                 pc += 1;
-                // inserts at index 0
                 stack.insert(0, U256::from(c[pc]));
             }
             PUSH32 => {
@@ -39,7 +38,6 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 stack.insert(0, number);
             }
             POP => {
-                // removes index 0
                 stack.remove(0);
             }
             STOP => {
@@ -77,16 +75,10 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             SDIV => {
                 // signed integer division
                 let a = stack.pop().unwrap_or_else(|| U256::from(0));
-                println!("sdiv a {:?}", a);
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
-                println!("sdiv b {:?}", b);
-                if a == U256::from(0) {
-                    stack.insert(0, a);
-                } else {
-                    // fmt.
-                    let quotient = b / a;
-                    stack.insert(0, quotient);
-                }
+                let quotient = b / a;
+                println!("quotient {:?}", quotient);
+                stack.insert(0, quotient);
             }
             _ => {
                 println!("unsupported instruction!");
