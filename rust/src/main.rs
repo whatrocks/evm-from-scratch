@@ -25,9 +25,7 @@ struct Expect {
 
 // This parses an integer based off its prefix: 0x - base16, otherwise base10.
 fn parseUIntRadix(number: &String) -> Option<U256> {
-    let radix = if number.starts_with("0x") {
-        16
-    } else { 10 };
+    let radix = if number.starts_with("0x") { 16 } else { 10 };
     if let Ok(result) = U256::from_str_radix(number, radix) {
         Some(result)
     } else {
