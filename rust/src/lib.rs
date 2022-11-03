@@ -6,6 +6,7 @@ const MUL: u8 = 2;
 const SUB: u8 = 3;
 const DIV: u8 = 4;
 const SDIV: u8 = 5;
+const MOD: u8 = 6;
 const POP: u8 = 80;
 const PUSH1: u8 = 96;
 const PUSH32: u8 = 127;
@@ -92,6 +93,16 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     (quotient, _) = U256::overflowing_add(!quotient, U256::from(1));
                 }
                 stack.insert(0, quotient);
+            }
+            MOD => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                if a == U256::from(0) {
+                    stack.insert(0, a);
+                } else {
+                    let modulus = b % a;
+                    stack.insert(0, modulus); 
+                }
             }
             _ => {
                 println!("unsupported instruction!");
