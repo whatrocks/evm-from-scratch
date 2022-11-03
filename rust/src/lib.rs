@@ -1,5 +1,6 @@
 use primitive_types::U256;
 
+// instructions
 const STOP: u8 = 0;
 const ADD: u8 = 1;
 const MUL: u8 = 2;
@@ -8,6 +9,9 @@ const DIV: u8 = 4;
 const SDIV: u8 = 5;
 const MOD: u8 = 6;
 const SMOD: u8 = 7;
+const LT: u8 = 16;
+const GT: u8 = 17;
+const SLT: u8 = 18;
 const POP: u8 = 80;
 const PUSH1: u8 = 96;
 const PUSH32: u8 = 127;
@@ -126,6 +130,26 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     (modulus, _) = U256::overflowing_add(!modulus, U256::from(1));
                 }
                 stack.insert(0, modulus);
+            }
+            LT => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let is_less_than = b < a;
+                if is_less_than {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0x0));
+                }
+            }
+            GT => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let is_greater_than = b > a;
+                if is_greater_than {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0x0));
+                }
             }
             _ => {
                 println!("unsupported instruction!");
