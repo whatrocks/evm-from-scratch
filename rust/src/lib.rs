@@ -12,6 +12,8 @@ const SMOD: u8 = 7;
 const LT: u8 = 16;
 const GT: u8 = 17;
 const SLT: u8 = 18;
+const SGT: u8 = 19;
+const EQ: u8 = 20;
 const POP: u8 = 80;
 const PUSH1: u8 = 96;
 const PUSH32: u8 = 127;
@@ -146,6 +148,64 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
                 let is_greater_than = b > a;
                 if is_greater_than {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0x0));
+                }
+            }
+            SLT => {
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
+                let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b_is_neg = U256::leading_zeros(&b) == 0;
+
+                let mut is_less_than = b < a;
+                if a_is_neg && b_is_neg {
+                    (a, _) = U256::overflowing_add(!a, U256::from(1));
+                    (b, _) = U256::overflowing_add(!b, U256::from(1));
+                    is_less_than = b < a;
+                }
+                if a_is_neg && !b_is_neg {
+                    is_less_than = false;
+                }
+                if !a_is_neg && b_is_neg {
+                    is_less_than = true;
+                }
+                if is_less_than {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0x0));
+                }
+            }
+            SGT => {
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
+                let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b_is_neg = U256::leading_zeros(&b) == 0;
+
+                let mut is_greater_than = b > a;
+                if a_is_neg && b_is_neg {
+                    (a, _) = U256::overflowing_add(!a, U256::from(1));
+                    (b, _) = U256::overflowing_add(!b, U256::from(1));
+                    is_greater_than = b > a;
+                }
+                if a_is_neg && !b_is_neg {
+                    is_greater_than = true;
+                }
+                if !a_is_neg && b_is_neg {
+                    is_greater_than = false;
+                }
+                if is_greater_than {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0x0));
+                }
+            }
+            EQ => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let is_equal = b == a;
+                if is_equal {
                     stack.insert(0, U256::from(0x1));
                 } else {
                     stack.insert(0, U256::from(0x0));
