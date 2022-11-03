@@ -101,7 +101,7 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     stack.insert(0, a);
                 } else {
                     let modulus = b % a;
-                    stack.insert(0, modulus); 
+                    stack.insert(0, modulus);
                 }
             }
             _ => {
