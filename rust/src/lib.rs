@@ -72,7 +72,8 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     stack.insert(0, quotient);
                 }
             }
-            SDIV => { // signed integer division
+            SDIV => {
+                // signed integer division
                 let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let a_is_neg = U256::leading_zeros(&a) == 0;
                 if a_is_neg {
@@ -80,17 +81,14 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 }
 
                 let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
-                println!("b is : {:?}", b);
                 let b_is_neg = U256::leading_zeros(&b) == 0;
                 if b_is_neg {
-                    println!("b is neg: {:?}", b_is_neg);
                     (b, _) = U256::overflowing_add(!b, U256::from(1));
                 }
 
                 let mut quotient = b / a;
 
                 if (a_is_neg && !b_is_neg) || (!a_is_neg && b_is_neg) {
-                    println!("flip it: {:?}", quotient);
                     (quotient, _) = U256::overflowing_add(!quotient, U256::from(1));
                 }
                 stack.insert(0, quotient);
