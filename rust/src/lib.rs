@@ -14,6 +14,11 @@ const GT: u8 = 17;
 const SLT: u8 = 18;
 const SGT: u8 = 19;
 const EQ: u8 = 20;
+const ISZERO: u8 = 21;
+const AND: u8 = 22;
+const OR: u8 = 23;
+const XOR: u8 = 24;
+const NOT: u8 = 25;
 const POP: u8 = 80;
 const PUSH1: u8 = 96;
 const PUSH32: u8 = 127;
@@ -210,6 +215,37 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 } else {
                     stack.insert(0, U256::from(0x0));
                 }
+            }
+            ISZERO => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                if a == U256::from(0) {
+                    stack.insert(0, U256::from(0x1));
+                } else {
+                    stack.insert(0, U256::from(0));
+                }
+            }
+            AND => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let and = a & b;
+                stack.insert(0, U256::from(and));
+            }
+            OR => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let result = a | b;
+                stack.insert(0, U256::from(result));
+            }
+            XOR => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let result = a ^ b;
+                stack.insert(0, U256::from(result));
+            }
+            NOT => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let result = !a;
+                stack.insert(0, U256::from(result));
             }
             _ => {
                 println!("unsupported instruction!");
