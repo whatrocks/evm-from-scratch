@@ -268,13 +268,14 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             BYTE => {
                 let value = stack.pop().unwrap_or_else(|| U256::from(0));
-                println!("value  {:?}", value);
-                let byte_offset = U256::from(31) - stack.pop().unwrap_or_else(|| U256::from(0));
-                println!("byte offset  {:?}", byte_offset);
-                // let byte_offset = U256::from(31);
-                let byte = value.byte(U256::as_usize(&byte_offset));
-                println!("byte  {:?}", byte);
-                stack.insert(0, U256::from(byte));
+                let mut byte_offset = stack.pop().unwrap_or_else(|| U256::from(0));
+                if byte_offset > U256::from(31) {
+                    stack.insert(0, U256::from(0));
+                } else {
+                    byte_offset = U256::from(31) - byte_offset;
+                    let byte = value.byte(U256::as_usize(&byte_offset));
+                    stack.insert(0, U256::from(byte));
+                }
             }
             _ => {
                 println!("unsupported instruction!");
