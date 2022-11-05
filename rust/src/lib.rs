@@ -21,6 +21,7 @@ const XOR: u8 = 24;
 const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const POP: u8 = 80;
+const PC: u8 = 88;
 const PUSH1: u8 = 96;
 const PUSH2: u8 = 97;
 const PUSH3: u8 = 98;
@@ -461,6 +462,9 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     let byte = value.byte(U256::as_usize(&byte_offset));
                     stack.insert(0, U256::from(byte));
                 }
+            }
+            PC => {
+                stack.insert(0, U256::from(pc));
             }
             _ => {
                 println!("unsupported instruction!");
