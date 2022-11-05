@@ -19,8 +19,11 @@ const AND: u8 = 22;
 const OR: u8 = 23;
 const XOR: u8 = 24;
 const NOT: u8 = 25;
+const BYTE: u8 = 26;
 const POP: u8 = 80;
 const PUSH1: u8 = 96;
+const PUSH2: u8 = 97;
+const PUSH3: u8 = 98;
 const PUSH32: u8 = 127;
 
 pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
@@ -37,10 +40,25 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // process instructions
     while pc < c.len() {
         let instruction = c[pc];
+        println!("instruction: {:?}", instruction);
         match instruction {
             PUSH1 => {
                 pc += 1;
                 stack.insert(0, U256::from(c[pc]));
+            }
+            PUSH2 => {
+                pc += 1;
+                let slice = &c[pc..pc + 2];
+                let number = U256::from_big_endian(slice);
+                stack.insert(0, number);
+                pc += 1;
+            }
+            PUSH3 => {
+                pc += 1;
+                let slice = &c[pc..pc + 3];
+                let number = U256::from_big_endian(slice);
+                stack.insert(0, number);
+                pc += 2;
             }
             PUSH32 => {
                 pc += 1;
@@ -49,6 +67,7 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let number = U256::from_big_endian(slice);
                 // println!("number is {:?}: ", number);
                 stack.insert(0, number);
+                pc += 31
             }
             POP => {
                 stack.remove(0);
@@ -246,6 +265,16 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let result = !a;
                 stack.insert(0, U256::from(result));
+            }
+            BYTE => {
+                let value = stack.pop().unwrap_or_else(|| U256::from(0));
+                println!("value  {:?}", value);
+                let byte_offset = U256::from(31) - stack.pop().unwrap_or_else(|| U256::from(0));
+                println!("byte offset  {:?}", byte_offset);
+                // let byte_offset = U256::from(31);
+                let byte = value.byte(U256::as_usize(&byte_offset));
+                println!("byte  {:?}", byte);
+                stack.insert(0, U256::from(byte));
             }
             _ => {
                 println!("unsupported instruction!");
