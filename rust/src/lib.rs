@@ -69,6 +69,8 @@ const DUP13: u8 = 140;
 const DUP14: u8 = 141;
 const DUP15: u8 = 142;
 const DUP16: u8 = 143;
+const SWAP1: u8 = 144;
+const SWAP3: u8 = 146;
 
 pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // convert instructions
@@ -230,6 +232,27 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             DUP16 => {
                 stack.insert(0, stack[15]);
+            }
+            SWAP1 => {
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                stack.insert(0, b);
+                stack.insert(0, a);
+            }
+            SWAP3 => {
+                let most_recent = stack.pop().unwrap_or_else(|| U256::from(0));
+                let mut queue: Vec<U256> = Vec::new();
+                for _ in 0..=1 {
+                    let next = stack.pop().unwrap_or_else(|| U256::from(0));
+                    queue.push(next);
+                }
+                let oldest = stack.pop().unwrap_or_else(|| U256::from(0));
+                stack.insert(0, oldest);
+                for i in 0..queue.len() {
+                    let item = queue[i];
+                    stack.insert(0, item);
+                }
+                stack.insert(0, most_recent);
             }
             POP => {
                 stack.remove(0);
