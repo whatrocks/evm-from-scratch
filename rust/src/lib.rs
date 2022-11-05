@@ -56,6 +56,19 @@ const PUSH32: u8 = 127;
 const DUP1: u8 = 128;
 const DUP2: u8 = 129;
 const DUP3: u8 = 130;
+const DUP4: u8 = 131;
+const DUP5: u8 = 132;
+const DUP6: u8 = 133;
+const DUP7: u8 = 134;
+const DUP8: u8 = 135;
+const DUP9: u8 = 136;
+const DUP10: u8 = 137;
+const DUP11: u8 = 138;
+const DUP12: u8 = 139;
+const DUP13: u8 = 140;
+const DUP14: u8 = 141;
+const DUP15: u8 = 142;
+const DUP16: u8 = 143;
 
 pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // convert instructions
@@ -178,6 +191,45 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             DUP3 => {
                 stack.insert(0, stack[2]);
+            }
+            DUP4 => {
+                stack.insert(0, stack[3]);
+            }
+            DUP5 => {
+                stack.insert(0, stack[4]);
+            }
+            DUP6 => {
+                stack.insert(0, stack[5]);
+            }
+            DUP7 => {
+                stack.insert(0, stack[6]);
+            }
+            DUP8 => {
+                stack.insert(0, stack[7]);
+            }
+            DUP9 => {
+                stack.insert(0, stack[8]);
+            }
+            DUP10 => {
+                stack.insert(0, stack[9]);
+            }
+            DUP11 => {
+                stack.insert(0, stack[10]);
+            }
+            DUP12 => {
+                stack.insert(0, stack[11]);
+            }
+            DUP13 => {
+                stack.insert(0, stack[12]);
+            }
+            DUP14 => {
+                stack.insert(0, stack[13]);
+            }
+            DUP15 => {
+                stack.insert(0, stack[14]);
+            }
+            DUP16 => {
+                stack.insert(0, stack[15]);
             }
             POP => {
                 stack.remove(0);
