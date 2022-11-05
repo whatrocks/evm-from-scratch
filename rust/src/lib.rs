@@ -22,6 +22,7 @@ const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const POP: u8 = 80;
 const PC: u8 = 88;
+const GAS: u8 = 90;
 const PUSH1: u8 = 96;
 const PUSH2: u8 = 97;
 const PUSH3: u8 = 98;
@@ -465,6 +466,9 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             PC => {
                 stack.insert(0, U256::from(pc));
+            }
+            GAS => {
+                stack.insert(0, U256::max_value());
             }
             _ => {
                 println!("unsupported instruction!");
