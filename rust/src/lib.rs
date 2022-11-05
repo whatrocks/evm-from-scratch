@@ -53,6 +53,9 @@ const PUSH29: u8 = 124;
 const PUSH30: u8 = 125;
 const PUSH31: u8 = 126;
 const PUSH32: u8 = 127;
+const DUP1: u8 = 128;
+const DUP2: u8 = 129;
+const DUP3: u8 = 130;
 
 pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // convert instructions
@@ -166,6 +169,15 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             PUSH32 => {
                 pc += push_n_bytes(32, &mut stack, &c[pc + 1..pc + 33]);
+            }
+            DUP1 => {
+                stack.insert(0, stack[0]);
+            }
+            DUP2 => {
+                stack.insert(0, stack[1]);
+            }
+            DUP3 => {
+                stack.insert(0, stack[2]);
             }
             POP => {
                 stack.remove(0);
