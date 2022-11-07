@@ -21,8 +21,11 @@ const XOR: u8 = 24;
 const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const POP: u8 = 80;
+const JUMP: u8 = 86;
+const JUMPI: u8 = 87;
 const PC: u8 = 88;
 const GAS: u8 = 90;
+const JUMPDEST: u8 = 91;
 const PUSH1: u8 = 96;
 const PUSH2: u8 = 97;
 const PUSH3: u8 = 98;
@@ -88,11 +91,12 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // process instructions
     while pc < c.len() {
         let instruction = c[pc];
-        println!("instruction: {:?}", instruction);
+        println!("instruction: {:?}, stack: {:?}", instruction, stack);
         match instruction {
             PUSH1 => {
                 pc += 1;
-                stack.insert(0, U256::from(c[pc]));
+                stack.push(U256::from(c[pc]));
+                println!("stack: {:?}", stack);
             }
             PUSH2 => {
                 pc += push_n_bytes(2, &mut stack, &c[pc + 1..pc + 3]);
@@ -187,122 +191,87 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             PUSH32 => {
                 pc += push_n_bytes(32, &mut stack, &c[pc + 1..pc + 33]);
             }
-            DUP1 => {
-                stack.insert(0, stack[0]);
-            }
-            DUP2 => {
-                stack.insert(0, stack[1]);
-            }
-            DUP3 => {
-                stack.insert(0, stack[2]);
-            }
-            DUP4 => {
-                stack.insert(0, stack[3]);
-            }
-            DUP5 => {
-                stack.insert(0, stack[4]);
-            }
-            DUP6 => {
-                stack.insert(0, stack[5]);
-            }
-            DUP7 => {
-                stack.insert(0, stack[6]);
-            }
-            DUP8 => {
-                stack.insert(0, stack[7]);
-            }
-            DUP9 => {
-                stack.insert(0, stack[8]);
-            }
-            DUP10 => {
-                stack.insert(0, stack[9]);
-            }
-            DUP11 => {
-                stack.insert(0, stack[10]);
-            }
-            DUP12 => {
-                stack.insert(0, stack[11]);
-            }
-            DUP13 => {
-                stack.insert(0, stack[12]);
-            }
-            DUP14 => {
-                stack.insert(0, stack[13]);
-            }
-            DUP15 => {
-                stack.insert(0, stack[14]);
-            }
-            DUP16 => {
-                stack.insert(0, stack[15]);
+            DUP1 | DUP2 | DUP3 | DUP4 | DUP5 | DUP6 | DUP7 | DUP8 | DUP9 | DUP10 | DUP11
+            | DUP12 | DUP13 | DUP14 | DUP15 | DUP16 => {
+                stack.push(stack[0]);
             }
             SWAP1 => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
-                stack.insert(0, b);
-                stack.insert(0, a);
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
+                stack.push(b);
+                stack.push(a);
             }
             SWAP3 => {
-                let most_recent = stack.pop().unwrap_or_else(|| U256::from(0));
-                let mut queue: Vec<U256> = Vec::new();
-                for _ in 0..=1 {
-                    let next = stack.pop().unwrap_or_else(|| U256::from(0));
-                    queue.push(next);
-                }
-                let oldest = stack.pop().unwrap_or_else(|| U256::from(0));
-                stack.insert(0, oldest);
-                for i in 0..queue.len() {
-                    let item = queue[i];
-                    stack.insert(0, item);
-                }
-                stack.insert(0, most_recent);
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let idx = stack.len() - 3;
+                let a = stack[idx];
+                let c = a;
+                let a = b;
+                let b = c;
+                stack[idx] = a;
+                stack.push(b);
             }
             POP => {
-                stack.remove(0);
+                stack.pop();
             }
+            JUMP => {
+                let counter = stack.pop().unwrap_or_else(|| U256::from(0));
+                pc = counter.as_usize();
+            }
+            JUMPI => {
+                let counter = stack.pop().unwrap_or_else(|| U256::from(0));
+                println!("c {:?}", counter);
+                let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                println!("b {:?}", b);
+                if b != U256::from(0) {
+                    pc = counter.as_usize();
+                }
+            }
+            JUMPDEST => {}
             STOP => {
                 break;
             }
             ADD => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let (sum, _) = U256::overflowing_add(b, a);
-                stack.insert(0, sum);
+                stack.push(sum);
             }
             MUL => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let (product, _) = U256::overflowing_mul(b, a);
-                stack.insert(0, product);
+                stack.push(product);
             }
             SUB => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let (diff, _) = U256::overflowing_sub(b, a);
-                stack.insert(0, diff);
+                stack.push(diff);
             }
 
             DIV => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 if a == U256::from(0) {
-                    stack.insert(0, a);
+                    stack.push(a);
                 } else {
                     let quotient = b / a;
-                    stack.insert(0, quotient);
+                    stack.push(quotient);
                 }
             }
             SDIV => {
                 // signed integer division
-                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
-                let a_is_neg = U256::leading_zeros(&a) == 0;
-                if a_is_neg {
-                    (a, _) = U256::overflowing_add(!a, U256::from(1));
-                }
-
                 let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b_is_neg = U256::leading_zeros(&b) == 0;
                 if b_is_neg {
                     (b, _) = U256::overflowing_add(!b, U256::from(1));
+                }
+
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
+                if a_is_neg {
+                    (a, _) = U256::overflowing_add(!a, U256::from(1));
                 }
 
                 let mut quotient = b / a;
@@ -310,65 +279,65 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 if (a_is_neg && !b_is_neg) || (!a_is_neg && b_is_neg) {
                     (quotient, _) = U256::overflowing_add(!quotient, U256::from(1));
                 }
-                stack.insert(0, quotient);
+                stack.push(quotient);
             }
             MOD => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 if a == U256::from(0) {
-                    stack.insert(0, a);
+                    stack.push(a);
                 } else {
                     let modulus = b % a;
-                    stack.insert(0, modulus);
+                    stack.push(modulus);
                 }
             }
             SMOD => {
-                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
-                let a_is_neg = U256::leading_zeros(&a) == 0;
-                if a_is_neg {
-                    (a, _) = U256::overflowing_add(!a, U256::from(1));
-                }
-
                 let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b_is_neg = U256::leading_zeros(&b) == 0;
                 if b_is_neg {
                     (b, _) = U256::overflowing_add(!b, U256::from(1));
                 }
+
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
+                if a_is_neg {
+                    (a, _) = U256::overflowing_add(!a, U256::from(1));
+                }
                 if a == U256::from(0) {
-                    stack.insert(0, a);
+                    stack.push(a);
                     break;
                 }
                 let mut modulus = b % a;
                 if a_is_neg {
                     (modulus, _) = U256::overflowing_add(!modulus, U256::from(1));
                 }
-                stack.insert(0, modulus);
+                stack.push(modulus);
             }
             LT => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let is_less_than = b < a;
                 if is_less_than {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0x0));
+                    stack.push(U256::from(0x0));
                 }
             }
             GT => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let is_greater_than = b > a;
                 if is_greater_than {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0x0));
+                    stack.push(U256::from(0x0));
                 }
             }
             SLT => {
-                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
-                let a_is_neg = U256::leading_zeros(&a) == 0;
                 let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b_is_neg = U256::leading_zeros(&b) == 0;
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
 
                 let mut is_less_than = b < a;
                 if a_is_neg && b_is_neg {
@@ -383,16 +352,16 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     is_less_than = true;
                 }
                 if is_less_than {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0x0));
+                    stack.push(U256::from(0x0));
                 }
             }
             SGT => {
-                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
-                let a_is_neg = U256::leading_zeros(&a) == 0;
                 let mut b = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b_is_neg = U256::leading_zeros(&b) == 0;
+                let mut a = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a_is_neg = U256::leading_zeros(&a) == 0;
 
                 let mut is_greater_than = b > a;
                 if a_is_neg && b_is_neg {
@@ -407,68 +376,68 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                     is_greater_than = false;
                 }
                 if is_greater_than {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0x0));
+                    stack.push(U256::from(0x0));
                 }
             }
             EQ => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let is_equal = b == a;
                 if is_equal {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0x0));
+                    stack.push(U256::from(0x0));
                 }
             }
             ISZERO => {
                 let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 if a == U256::from(0) {
-                    stack.insert(0, U256::from(0x1));
+                    stack.push(U256::from(0x1));
                 } else {
-                    stack.insert(0, U256::from(0));
+                    stack.push(U256::from(0));
                 }
             }
             AND => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let and = a & b;
-                stack.insert(0, U256::from(and));
+                stack.push(U256::from(and));
             }
             OR => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let result = a | b;
-                stack.insert(0, U256::from(result));
+                stack.push(U256::from(result));
             }
             XOR => {
-                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let b = stack.pop().unwrap_or_else(|| U256::from(0));
+                let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let result = a ^ b;
-                stack.insert(0, U256::from(result));
+                stack.push(U256::from(result));
             }
             NOT => {
                 let a = stack.pop().unwrap_or_else(|| U256::from(0));
                 let result = !a;
-                stack.insert(0, U256::from(result));
+                stack.push(U256::from(result));
             }
             BYTE => {
-                let value = stack.pop().unwrap_or_else(|| U256::from(0));
                 let mut byte_offset = stack.pop().unwrap_or_else(|| U256::from(0));
+                let value = stack.pop().unwrap_or_else(|| U256::from(0));
                 if byte_offset > U256::from(31) {
-                    stack.insert(0, U256::from(0));
+                    stack.push(U256::from(0));
                 } else {
                     byte_offset = U256::from(31) - byte_offset;
                     let byte = value.byte(U256::as_usize(&byte_offset));
-                    stack.insert(0, U256::from(byte));
+                    stack.push(U256::from(byte));
                 }
             }
             PC => {
-                stack.insert(0, U256::from(pc));
+                stack.push(U256::from(pc));
             }
             GAS => {
-                stack.insert(0, U256::max_value());
+                stack.push(U256::max_value());
             }
             _ => {
                 println!("unsupported instruction!");
@@ -478,11 +447,11 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
         // advance program counter
         pc += 1;
     }
-    return stack;
+    return stack.into_iter().rev().collect();
 }
 
 fn push_n_bytes(n: usize, stack: &mut Vec<U256>, bytes: &[u8]) -> usize {
     let number = U256::from_big_endian(bytes);
-    stack.insert(0, number);
+    stack.push(number);
     return n;
 }
