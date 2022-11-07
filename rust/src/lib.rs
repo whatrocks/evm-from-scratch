@@ -21,6 +21,8 @@ const XOR: u8 = 24;
 const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const POP: u8 = 80;
+const MLOAD: u8 = 81;
+const MSTORE: u8 = 82;
 const JUMP: u8 = 86;
 const JUMPI: u8 = 87;
 const PC: u8 = 88;
@@ -77,6 +79,23 @@ const DUP16: u8 = 143;
 const SWAP1: u8 = 144;
 const SWAP3: u8 = 146;
 
+struct Memory {
+    storage: Vec<U256>,
+}
+impl Memory {
+    fn new() -> Memory {
+        Memory {
+            storage: Vec::new(),
+        }
+    }
+    fn store(&mut self, item: U256) {
+        self.storage.push(item);
+    }
+    fn load(&mut self) -> U256 {
+        return self.storage.pop().unwrap_or_else(|| U256::from(0));
+    }
+}
+
 pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
     // convert instructions
     let c = code.as_ref();
@@ -87,6 +106,9 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
 
     // init program counter
     let mut pc = 0;
+
+    // init memory
+    let mut memory = Memory::new();
 
     // process instructions
     while pc < c.len() {
@@ -438,6 +460,16 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
             }
             GAS => {
                 stack.push(U256::max_value());
+            }
+            MSTORE => {
+                let _ = stack.pop().unwrap_or_else(|| U256::from(0));
+                let value = stack.pop().unwrap_or_else(|| U256::from(0));
+                memory.store(value);
+            }
+            MLOAD => {
+                let _ = stack.pop().unwrap_or_else(|| U256::from(0));
+                let value = memory.load();
+                stack.push(value);
             }
             _ => {
                 println!("unsupported instruction!");
