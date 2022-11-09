@@ -85,7 +85,7 @@ struct Memory {
 impl Memory {
     fn new() -> Memory {
         Memory {
-            storage: vec![0; 1024*1024]
+            storage: vec![0; 1024 * 1024],
         }
     }
     fn store(&mut self, offset: usize, value: U256) {
@@ -96,7 +96,7 @@ impl Memory {
         }
     }
     fn load(&mut self, offset: usize) -> U256 {
-        let bytes = &self.storage[offset..offset+32];
+        let bytes = &self.storage[offset..offset + 32];
         return U256::from_big_endian(bytes);
     }
 }
