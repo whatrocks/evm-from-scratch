@@ -23,9 +23,11 @@ const BYTE: u8 = 26;
 const POP: u8 = 80;
 const MLOAD: u8 = 81;
 const MSTORE: u8 = 82;
+const MSTORE8: u8 = 83;
 const JUMP: u8 = 86;
 const JUMPI: u8 = 87;
 const PC: u8 = 88;
+const MSIZE: u8 = 89;
 const GAS: u8 = 90;
 const JUMPDEST: u8 = 91;
 const PUSH1: u8 = 96;
@@ -81,21 +83,42 @@ const SWAP3: u8 = 146;
 
 struct Memory {
     storage: Vec<u8>,
+    size: usize,
 }
 impl Memory {
     fn new() -> Memory {
         Memory {
             storage: vec![0; 1024 * 1024],
+            size: 0,
         }
+    }
+    fn get_size(&mut self) -> U256 {
+        return U256::from(self.size);
     }
     fn store(&mut self, offset: usize, value: U256) {
         for i in 0..32 {
             let byte = value.byte(31 - i);
             let idx = offset + i;
+            if idx > self.size {
+                self.size = ((idx + 31) / 32) * 32;
+            }
             self.storage[idx] = byte;
         }
     }
+    fn store_byte(&mut self, offset: usize, byte: u8) {
+        if offset > self.size {
+            self.size = ((offset + 31) / 32) * 32;
+        }
+        self.storage[offset] = byte;
+    }
     fn load(&mut self, offset: usize) -> U256 {
+        if offset > self.size {
+            self.size = ((offset + 31) / 32) * 32;
+        }
+        let upper_idx = offset + 32;
+        if upper_idx > self.size {
+            self.size = ((upper_idx + 31) / 32) * 32;
+        }
         let bytes = &self.storage[offset..offset + 32];
         return U256::from_big_endian(bytes);
     }
@@ -470,6 +493,16 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let offset = stack.pop().unwrap_or_else(|| U256::from(0));
                 let value = stack.pop().unwrap_or_else(|| U256::from(0));
                 memory.store(offset.as_usize(), value);
+            }
+            MSTORE8 => {
+                let offset = stack.pop().unwrap_or_else(|| U256::from(0));
+                let value = stack.pop().unwrap_or_else(|| U256::from(0));
+                let byte = value.byte(0);
+                memory.store_byte(offset.as_usize(), byte);
+            }
+            MSIZE => {
+                let size = memory.get_size();
+                stack.push(size);
             }
             MLOAD => {
                 let offset = stack.pop().unwrap_or_else(|| U256::from(0));
