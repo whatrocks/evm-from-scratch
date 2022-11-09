@@ -80,19 +80,24 @@ const SWAP1: u8 = 144;
 const SWAP3: u8 = 146;
 
 struct Memory {
-    storage: Vec<U256>,
+    storage: Vec<u8>,
 }
 impl Memory {
     fn new() -> Memory {
         Memory {
-            storage: Vec::new(),
+            storage: vec![0; 1024*1024]
         }
     }
-    fn store(&mut self, item: U256) {
-        self.storage.push(item);
+    fn store(&mut self, offset: usize, value: U256) {
+        for i in 0..32 {
+            let byte = value.byte(31 - i);
+            let idx = offset + i;
+            self.storage[idx] = byte;
+        }
     }
-    fn load(&mut self) -> U256 {
-        return self.storage.pop().unwrap_or_else(|| U256::from(0));
+    fn load(&mut self, offset: usize) -> U256 {
+        let bytes = &self.storage[offset..offset+32];
+        return U256::from_big_endian(bytes);
     }
 }
 
@@ -462,13 +467,13 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 stack.push(U256::max_value());
             }
             MSTORE => {
-                let _ = stack.pop().unwrap_or_else(|| U256::from(0));
+                let offset = stack.pop().unwrap_or_else(|| U256::from(0));
                 let value = stack.pop().unwrap_or_else(|| U256::from(0));
-                memory.store(value);
+                memory.store(offset.as_usize(), value);
             }
             MLOAD => {
-                let _ = stack.pop().unwrap_or_else(|| U256::from(0));
-                let value = memory.load();
+                let offset = stack.pop().unwrap_or_else(|| U256::from(0));
+                let value = memory.load(offset.as_usize());
                 stack.push(value);
             }
             _ => {
