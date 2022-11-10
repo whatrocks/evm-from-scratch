@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use primitive_types::U256;
+use sha3::{Digest, Keccak256};
 
 // instructions
 const STOP: u8 = 0;
@@ -20,6 +23,8 @@ const OR: u8 = 23;
 const XOR: u8 = 24;
 const NOT: u8 = 25;
 const BYTE: u8 = 26;
+const SHA3: u8 = 32;
+const ADDRESS: u8 = 48;
 const POP: u8 = 80;
 const MLOAD: u8 = 81;
 const MSTORE: u8 = 82;
@@ -509,6 +514,23 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let value = memory.load(offset.as_usize());
                 stack.push(value);
             }
+            SHA3 => {
+                let offset = stack.pop().unwrap_or_else(|| U256::from(0));
+                let num_bytes = stack.pop().unwrap_or_else(|| U256::from(0)).as_usize();
+                let value = memory.load(offset.as_usize());
+                let mut bytes: Vec<u8> = Vec::new();
+                for i in 0..num_bytes {
+                    let byte = value.byte(31 - i);
+                    bytes.push(byte);
+                }
+                let mut hasher = Keccak256::new();
+                hasher.update(bytes);
+                let result = hasher.finalize();
+                let foo = hex::encode(result);
+                let hash = U256::from_str(&foo);
+                stack.push(hash.unwrap());
+            }
+            ADDRESS => {}
             _ => {
                 println!("unsupported instruction!");
             }

@@ -44,6 +44,8 @@ fn main() {
 
         let code: Vec<u8> = hex::decode(&test.code.bin).unwrap();
 
+        // let tx:
+
         let actual_stack = evm(&code);
 
         let mut expected_stack: Vec<U256> = Vec::new();
