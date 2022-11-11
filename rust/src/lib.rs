@@ -7,6 +7,7 @@ use sha3::{Digest, Keccak256};
 #[derive(Debug, Deserialize)]
 pub struct Tx {
     pub to: Option<String>,
+    pub from: Option<String>,
 }
 
 // instructions
@@ -31,6 +32,7 @@ const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const SHA3: u8 = 32;
 const ADDRESS: u8 = 48;
+const CALLER: u8 = 51;
 const POP: u8 = 80;
 const MLOAD: u8 = 81;
 const MSTORE: u8 = 82;
@@ -540,6 +542,11 @@ pub fn evm(code: impl AsRef<[u8]>, tx: Tx) -> Vec<U256> {
                 let to = tx.to.clone().unwrap();
                 let address = U256::from_str(&to);
                 stack.push(address.unwrap());
+            }
+            CALLER => {
+                let from = tx.from.clone().unwrap();
+                let caller = U256::from_str(&from);
+                stack.push(caller.unwrap());
             }
             _ => {
                 println!("unsupported instruction!");

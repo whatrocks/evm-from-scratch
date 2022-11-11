@@ -47,18 +47,22 @@ fn main() {
 
         let code: Vec<u8> = hex::decode(&test.code.bin).unwrap();
 
-        let mut myTx = Tx {
+        let mut my_tx = Tx {
             to: Some("123".to_string()),
+            from: Some("456".to_string()),
         };
 
         if test.tx.is_some() {
             let transaction = test.tx.as_ref().unwrap();
             if transaction.to.is_some() {
-                myTx.to = transaction.to.clone();
+                my_tx.to = transaction.to.clone();
+            }
+            if transaction.from.is_some() {
+                my_tx.from = transaction.from.clone();
             }
         }
 
-        let actual_stack = evm(&code, myTx);
+        let actual_stack = evm(&code, my_tx);
 
         let mut expected_stack: Vec<U256> = Vec::new();
         if let Some(ref stacks) = test.expect.stack {
