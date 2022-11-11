@@ -2,10 +2,13 @@ use evm::evm;
 use primitive_types::U256;
 use serde::Deserialize;
 
+use evm::Tx;
+
 #[derive(Debug, Deserialize)]
 struct Evmtest {
     name: String,
     code: Code,
+    tx: Option<Tx>,
     expect: Expect,
 }
 
@@ -44,9 +47,18 @@ fn main() {
 
         let code: Vec<u8> = hex::decode(&test.code.bin).unwrap();
 
-        // let tx:
+        let mut myTx = Tx {
+            to: Some("123".to_string()),
+        };
 
-        let actual_stack = evm(&code);
+        if test.tx.is_some() {
+            let transaction = test.tx.as_ref().unwrap();
+            if transaction.to.is_some() {
+                myTx.to = transaction.to.clone();
+            }
+        }
+
+        let actual_stack = evm(&code, myTx);
 
         let mut expected_stack: Vec<U256> = Vec::new();
         if let Some(ref stacks) = test.expect.stack {

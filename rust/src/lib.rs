@@ -1,7 +1,13 @@
 use std::str::FromStr;
 
 use primitive_types::U256;
+use serde::Deserialize;
 use sha3::{Digest, Keccak256};
+
+#[derive(Debug, Deserialize)]
+pub struct Tx {
+    pub to: Option<String>,
+}
 
 // instructions
 const STOP: u8 = 0;
@@ -129,7 +135,7 @@ impl Memory {
     }
 }
 
-pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
+pub fn evm(code: impl AsRef<[u8]>, tx: Tx) -> Vec<U256> {
     // convert instructions
     let c = code.as_ref();
     println!("{:?}", c);
@@ -530,7 +536,11 @@ pub fn evm(code: impl AsRef<[u8]>) -> Vec<U256> {
                 let hash = U256::from_str(&foo);
                 stack.push(hash.unwrap());
             }
-            ADDRESS => {}
+            ADDRESS => {
+                let to = tx.to.clone().unwrap();
+                let address = U256::from_str(&to);
+                stack.push(address.unwrap());
+            }
             _ => {
                 println!("unsupported instruction!");
             }
