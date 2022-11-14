@@ -1,6 +1,7 @@
 use evm::evm;
 use primitive_types::U256;
 use serde::Deserialize;
+use serde_json::json;
 
 use evm::Tx;
 
@@ -9,6 +10,7 @@ struct Evmtest {
     name: String,
     code: Code,
     tx: Option<Tx>,
+    state: Option<serde_json::Value>,
     expect: Expect,
 }
 
@@ -62,7 +64,14 @@ fn main() {
             }
         }
 
-        let actual_stack = evm(&code, my_tx);
+        let mut state = json!({});
+
+        if test.state.is_some() {
+            let test_state = test.state.as_ref().unwrap();
+            state = test_state.clone();
+        }
+
+        let actual_stack = evm(&code, my_tx, state);
 
         let mut expected_stack: Vec<U256> = Vec::new();
         if let Some(ref stacks) = test.expect.stack {

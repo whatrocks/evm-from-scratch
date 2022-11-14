@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use primitive_types::U256;
 use serde::Deserialize;
+use serde_json::json;
 use sha3::{Digest, Keccak256};
 
 #[derive(Debug, Deserialize)]
@@ -32,6 +33,7 @@ const NOT: u8 = 25;
 const BYTE: u8 = 26;
 const SHA3: u8 = 32;
 const ADDRESS: u8 = 48;
+const BALANCE: u8 = 49;
 const CALLER: u8 = 51;
 const POP: u8 = 80;
 const MLOAD: u8 = 81;
@@ -137,7 +139,7 @@ impl Memory {
     }
 }
 
-pub fn evm(code: impl AsRef<[u8]>, tx: Tx) -> Vec<U256> {
+pub fn evm(code: impl AsRef<[u8]>, tx: Tx, state: serde_json::Value) -> Vec<U256> {
     // convert instructions
     let c = code.as_ref();
     println!("{:?}", c);
@@ -154,7 +156,7 @@ pub fn evm(code: impl AsRef<[u8]>, tx: Tx) -> Vec<U256> {
     // process instructions
     while pc < c.len() {
         let instruction = c[pc];
-        println!("instruction: {:?}, stack: {:?}", instruction, stack);
+        println!("instruction: {:?}, stack: {:#?}", instruction, stack);
         match instruction {
             PUSH1 => {
                 pc += 1;
@@ -547,6 +549,18 @@ pub fn evm(code: impl AsRef<[u8]>, tx: Tx) -> Vec<U256> {
                 let from = tx.from.clone().unwrap();
                 let caller = U256::from_str(&from);
                 stack.push(caller.unwrap());
+            }
+            BALANCE => {
+                let address_number = stack.pop().unwrap_or_else(|| U256::from(0));
+                let address = format!("0x{:0x}", address_number);
+                if state.get(address.clone()).is_none() {
+                    stack.push(U256::from(0));
+                } else {
+                    let address_info = state.get(address).unwrap();
+                    let balance = address_info.get("balance").unwrap().as_str().unwrap();
+                    let balance_num = U256::from_str(balance);
+                    stack.push(balance_num.unwrap());
+                }
             }
             _ => {
                 println!("unsupported instruction!");
